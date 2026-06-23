@@ -306,11 +306,24 @@ const ADMIN = {id:'admin',name:'Administrador',pin:'9008',icon:'🔑',role:'admi
 // ============================================================
 function buildLoginGrid(){
   const grid = document.getElementById('doctor-grid');
+  // Each doctor only sees their own button + admin
+  // We show all buttons but use URL param or just show all — 
+  // Actually: show admin + individual doctor pages via PIN only
+  // Solution: show ONLY admin button + a generic "Soy médico" button
+  // When they click "Soy médico" they type their PIN and system finds them
   let html = `<button class="doctor-btn admin-btn" onclick="selectUser('admin')"><span class="icon">🔑</span>Administrador</button>`;
-  DB.doctors.forEach(d=>{
-    html += `<button class="doctor-btn" onclick="selectUser('${d.id}')"><span class="icon">${d.icon}</span>${d.name.replace(' ','<br>')}</button>`;
-  });
+  html += `<button class="doctor-btn" style="grid-column:1/-1;" onclick="showDoctorPinEntry()"><span class="icon">👨‍⚕️</span>Soy Médico — Ingresar</button>`;
   grid.innerHTML = html;
+}
+
+function showDoctorPinEntry(){
+  selectedPinUser = '__doctor__';
+  document.getElementById('doctor-grid').style.display='none';
+  document.getElementById('pin-section').classList.add('show');
+  document.getElementById('pin-label').textContent = 'Ingrese su PIN';
+  document.getElementById('pin-input').value='';
+  document.getElementById('pin-error').style.display='none';
+  setTimeout(()=>document.getElementById('pin-input').focus(),80);
 }
 
 function selectUser(uid){
@@ -332,9 +345,27 @@ function cancelPin(){
 
 function doLogin(){
   const uid = selectedPinUser;
+  const entered = document.getElementById('pin-input').value.trim().toLowerCase();
+  
+  // Generic doctor login - search by PIN
+  if(uid === '__doctor__'){
+    const doc = DB.doctors.find(d=>d.pin.toLowerCase()===entered);
+    if(doc){
+      currentUser = doc.id;
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('hdr').style.display='flex';
+      document.getElementById('app').classList.add('show');
+      initApp();
+    } else {
+      document.getElementById('pin-error').style.display='block';
+      document.getElementById('pin-input').value='';
+      document.getElementById('pin-input').focus();
+    }
+    return;
+  }
+  
   const u = uid==='admin' ? ADMIN : DB.doctors.find(d=>d.id===uid);
   if(!u){return;}
-  const entered = document.getElementById('pin-input').value.trim().toLowerCase();
   if(entered === u.pin.toLowerCase()){
     currentUser = uid;
     document.getElementById('login-screen').classList.add('hidden');
