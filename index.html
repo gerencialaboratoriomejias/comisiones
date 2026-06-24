@@ -493,11 +493,11 @@ function cancelPin(){
 
 function doLogin(){
   const uid = selectedPinUser;
-  const entered = document.getElementById('pin-input').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const entered = document.getElementById('pin-input').value.trim().toLowerCase();
   
   // Generic doctor login - search by PIN
   if(uid === '__doctor__'){
-    const doc = DB.doctors.find(d=>d.pin.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')===entered);
+    const doc = DB.doctors.find(d=>d.pin.toLowerCase().trim()===entered);
     if(doc){
       currentUser = doc.id;
       document.getElementById('login-screen').classList.add('hidden');
@@ -514,7 +514,7 @@ function doLogin(){
   
   const u = uid==='admin' ? ADMIN : DB.doctors.find(d=>d.id===uid);
   if(!u){return;}
-  if(entered === u.pin.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')){
+  if(entered === u.pin.toLowerCase().trim()){
     currentUser = uid;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('hdr').style.display='flex';
