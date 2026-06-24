@@ -249,7 +249,7 @@ body.dark .doctor-list-item{border-color:#1e3a5f;}
     <div class="doctor-grid" id="doctor-grid"></div>
     <div class="pin-section" id="pin-section">
       <div class="pin-label" id="pin-label">Ingrese su PIN</div>
-      <input type="password" class="pin-input" id="pin-input" maxlength="30" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <input type="text" class="pin-input" id="pin-input" maxlength="30" placeholder="••••••" onkeydown="if(event.key==='Enter')doLogin()" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false" inputmode="text">
       <button class="pin-btn" onclick="doLogin()">INGRESAR →</button>
       <div class="pin-error" id="pin-error">PIN incorrecto. Intente de nuevo.</div>
       <button class="back-btn" onclick="cancelPin()">← Volver</button>
@@ -493,11 +493,11 @@ function cancelPin(){
 
 function doLogin(){
   const uid = selectedPinUser;
-  const entered = document.getElementById('pin-input').value.trim().toLowerCase();
+  const entered = document.getElementById('pin-input').value.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   
   // Generic doctor login - search by PIN
   if(uid === '__doctor__'){
-    const doc = DB.doctors.find(d=>d.pin.toLowerCase()===entered);
+    const doc = DB.doctors.find(d=>d.pin.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')===entered);
     if(doc){
       currentUser = doc.id;
       document.getElementById('login-screen').classList.add('hidden');
@@ -514,7 +514,7 @@ function doLogin(){
   
   const u = uid==='admin' ? ADMIN : DB.doctors.find(d=>d.id===uid);
   if(!u){return;}
-  if(entered === u.pin.toLowerCase()){
+  if(entered === u.pin.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'')){
     currentUser = uid;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('hdr').style.display='flex';
