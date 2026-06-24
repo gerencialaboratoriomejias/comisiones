@@ -624,7 +624,7 @@ function buildDoctorHTML(id,isAdmin){
   const doc=DB.doctors.find(d=>d.id===id); if(!doc) return '';
   const all=getCommissions(id);
   const now=new Date(); const month=now.getMonth(); const year=now.getFullYear();
-  const monthly=all.filter(c=>{ const d=new Date(c.fecha+'T12:00'); return d.getMonth()===month&&d.getFullYear()===year; });
+  const monthly=all.filter(c=>{ const fechaStr=String(c.fecha||'').slice(0,10); const d=new Date(fechaStr+'T12:00:00'); return d.getMonth()===month&&d.getFullYear()===year; });
   const totalCom=monthly.reduce((s,c)=>s+(c.comision||0),0);
   const totalPac=monthly.reduce((s,c)=>s+(c.pacientes||0),0);
   const totalEx=monthly.reduce((s,c)=>s+(c.examenes||0),0);
@@ -712,7 +712,7 @@ function initChart(id){
     const labels=[],data=[];
     for(let i=5;i>=0;i--){
       const d=new Date(year,month-i,1); const m=d.getMonth(); const y=d.getFullYear();
-      const sum=all.filter(c=>{const cd=new Date(c.fecha+'T12:00');return cd.getMonth()===m&&cd.getFullYear()===y;}).reduce((s,c)=>s+(c.comision||0),0);
+      const sum=all.filter(c=>{const cdStr=String(c.fecha||'').slice(0,10); const cd=new Date(cdStr+'T12:00:00');return cd.getMonth()===m&&cd.getFullYear()===y;}).reduce((s,c)=>s+(c.comision||0),0);
       labels.push(mesesShort[m]+' '+y); data.push(parseFloat(sum.toFixed(2)));
     }
     const medal=getMedal(data[data.length-1]);
@@ -763,7 +763,7 @@ function saveCommission(){
   // Check medal upgrade
   const prevRecs=DB.commissions.filter(c=>c.doctor===doctor&&c.ts!==DB.commissions[DB.commissions.length-1].ts);
   const now2=new Date(); const mo=now2.getMonth(); const yr=now2.getFullYear();
-  const prevMonthly=prevRecs.filter(c=>{const cd=new Date(c.fecha+'T12:00');return cd.getMonth()===mo&&cd.getFullYear()===yr;});
+  const prevMonthly=prevRecs.filter(c=>{const cdStr=String(c.fecha||'').slice(0,10); const cd=new Date(cdStr+'T12:00:00');return cd.getMonth()===mo&&cd.getFullYear()===yr;});
   const prevTotal=prevMonthly.reduce((s,c)=>s+(c.comision||0),0);
   const newTotal=prevTotal+comision;
   checkMedalUp(doctor, prevTotal, newTotal);
@@ -966,7 +966,7 @@ function generateComprobante(docId){
   const now = new Date(); const month = now.getMonth(); const year = now.getFullYear();
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const all = getCommissions(docId);
-  const monthly = all.filter(c=>{ const d=new Date(c.fecha+'T12:00'); return d.getMonth()===month&&d.getFullYear()===year; });
+  const monthly = all.filter(c=>{ const fechaStr=String(c.fecha||'').slice(0,10); const d=new Date(fechaStr+'T12:00:00'); return d.getMonth()===month&&d.getFullYear()===year; });
   const totalCom = monthly.reduce((s,c)=>s+(c.comision||0),0);
   const totalPac = monthly.reduce((s,c)=>s+(c.pacientes||0),0);
   const totalEx  = monthly.reduce((s,c)=>s+(c.examenes||0),0);
