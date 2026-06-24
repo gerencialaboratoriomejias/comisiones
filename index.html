@@ -359,22 +359,89 @@ const MOTIVATIONS = [
 ];
 
 const DB_KEY = 'mejias_v2_';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzNyWXH2EIrAx3CD4rZgw1BueQIbRU8C65puAR5IOy1IYA9V_dq3maDI_1hYRulV_B2MQ/exec';
+
+let DB = { commissions: [], doctors: [] };
 
 function loadDB(){
-  try{ const r=localStorage.getItem(DB_KEY+'data'); if(r) return JSON.parse(r); }catch(e){}
-  return {
-    commissions:[],
-    doctors:[
-      {id:'rascon',  name:'Dr. Alfredo Rascón Ramírez',      pin:'rascon',  icon:'👨‍⚕️'},
-      {id:'mayorga', name:'Dra. Marelyn Mayorga Hernández',  pin:'mayorga', icon:'👩‍⚕️'},
-      {id:'castillo',name:'Clínica Castillo Alvarado',       pin:'castillo',icon:'🩺' },
-    ]
-  };
+  try{ const r=localStorage.getItem(DB_KEY+'data'); if(r){ const d=JSON.parse(r); if(d.doctors&&d.doctors.length) return d; } }catch(e){}
+  return { commissions:[], doctors:[] };
 }
 
-function saveDB(){localStorage.setItem(DB_KEY+'data',JSON.stringify(DB));}
+function saveDB(){
+  localStorage.setItem(DB_KEY+'data', JSON.stringify(DB));
+}
 
-let DB = loadDB();
+async function syncFromSheet(){
+  try{
+    // Load medicos
+    const r1 = await fetch(SCRIPT_URL+'?action=getMedicos');
+    const d1 = await r1.json();
+    if(d1.medicos && d1.medicos.length){
+      DB.doctors = d1.medicos.map(m=>({id:m.id, name:m.nombre, pin:m.pin, icon:m.icon||'👨‍⚕️'}));
+    }
+    // Load comisiones
+    const r2 = await fetch(SCRIPT_URL+'?action=getComisiones');
+    const d2 = await r2.json();
+    if(d2.comisiones){
+      DB.commissions = d2.comisiones.map(c=>({
+        doctor:c.doctor, fecha:c.fecha, pacientes:Number(c.pacientes||0),
+        examenes:Number(c.examenes||0), fondo:Number(c.fondo||0),
+        comision:Number(c.comision||0), obs:c.obs||'',
+        id:c.id, ts:c.id?parseInt(c.id.replace('C',''))||0:0
+      }));
+    }
+    saveDB();
+    return true;
+  }catch(e){ console.log('Sheet sync error:', e); return false; }
+}
+
+async function saveCommissionToSheet(record){
+  try{
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'saveComision', ...record})
+    });
+  }catch(e){ console.log('Save error:', e); }
+}
+
+async function deleteCommissionFromSheet(id){
+  try{
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'deleteComision', id})
+    });
+  }catch(e){ console.log('Delete error:', e); }
+}
+
+async function saveMedicoToSheet(medico){
+  try{
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'saveMedico', id:medico.id, nombre:medico.name, pin:medico.pin, icon:medico.icon})
+    });
+  }catch(e){ console.log('Save medico error:', e); }
+}
+
+async function deleteMedicoFromSheet(id){
+  try{
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'deleteMedico', id})
+    });
+  }catch(e){ console.log('Delete medico error:', e); }
+}
+
+async function updatePinInSheet(id, pin){
+  try{
+    await fetch(SCRIPT_URL, {
+      method:'POST',
+      body: JSON.stringify({action:'updatePin', id, pin})
+    });
+  }catch(e){ console.log('Pin update error:', e); }
+}
+
+DB = loadDB();
 let currentUser = null;
 let selectedPinUser = null;
 let adminSelectedDoctor = null;
@@ -473,9 +540,13 @@ function logout(){
 // ============================================================
 // APP
 // ============================================================
-function initApp(){
+async function initApp(){
+  setLoading(true);
+  await syncFromSheet();
+  setLoading(false);
   const isAdmin = currentUser==='admin';
   const u = isAdmin ? ADMIN : DB.doctors.find(d=>d.id===currentUser);
+  if(!u){ logout(); return; }
   document.getElementById('hdr-user').textContent = u.name;
   document.getElementById('hdr-subtitle').textContent = isAdmin ? 'Panel Administrador' : 'Mi Panel de Comisiones';
   const now=new Date();
@@ -547,14 +618,18 @@ function buildDoctorHTML(id,isAdmin){
   const totalFondo=monthly.reduce((s,c)=>s+(c.fondo||0),0);
   const medal=getMedal(totalCom);
   const nextMedal=getNextMedal(totalCom);
-  const progress=medal.max===Infinity?100:Math.min(100,((totalCom-medal.min)/(medal.max-medal.min))*100);
+  // Progress within current medal range only
+  const rangeMin=medal.min;
+  const rangeMax=medal.max===Infinity?medal.min+200:medal.max;
+  const progress=Math.min(100,Math.max(0,((totalCom-rangeMin)/(rangeMax-rangeMin))*100));
   const mot=MOTIVATIONS[Math.floor(Math.random()*MOTIVATIONS.length)];
   const meses=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   let histRows=monthly.slice().reverse().map((c,i)=>{
     const origIdx=all.indexOf(c);
     const delBtn=isAdmin?`<td><button class="btn-danger" onclick="deleteCommission('${id}',${origIdx})">🗑</button></td>`:'';
-    return `<tr><td style="font-size:11px;color:var(--light)">${c.fecha}</td><td><b>${c.pacientes}</b></td><td>${c.examenes}</td><td style="font-family:var(--mono)">$${fmt(c.fondo)}</td><td style="font-family:var(--mono);color:#00a651;font-weight:700">$${fmt(c.comision)}</td><td style="font-size:11px;color:var(--mid)">${c.obs||'—'}</td>${delBtn}</tr>`;
+    const fondoCol=isAdmin?`<td style="font-family:var(--mono)">$${fmt(c.fondo)}</td>`:'';
+    return `<tr><td style="font-size:11px;color:var(--light)">${c.fecha}</td><td><b>${c.pacientes}</b></td><td>${c.examenes}</td>${fondoCol}<td style="font-family:var(--mono);color:#00a651;font-weight:700">$${fmt(c.comision)}</td><td style="font-size:11px;color:var(--mid)">${c.obs||'—'}</td>${delBtn}</tr>`;
   }).join('');
   if(!histRows) histRows=`<tr><td colspan="${isAdmin?7:6}" style="text-align:center;padding:22px;color:var(--light)">Sin registros este mes</td></tr>`;
 
@@ -566,6 +641,7 @@ function buildDoctorHTML(id,isAdmin){
   if(!allRows) allRows=`<tr><td colspan="${isAdmin?7:6}" style="text-align:center;padding:22px;color:var(--light)">Sin registros</td></tr>`;
 
   const thExt=isAdmin?'<th></th>':'';
+  const thFondo=isAdmin?'<th>Fondo</th>':'';
 
   return `
   <div class="doctor-header">
@@ -575,7 +651,7 @@ function buildDoctorHTML(id,isAdmin){
   </div>
   <div class="kpi-grid">
     <div class="kpi-card" style="--accent:${medal.color}"><div class="kpi-label">Comisión del Mes</div><div class="kpi-val" style="color:${medal.color}">$${fmt(totalCom)}</div><div class="kpi-sub">10% del fondo</div></div>
-    <div class="kpi-card" style="--accent:#1a6fd4"><div class="kpi-label">Fondo Total</div><div class="kpi-val">$${fmt(totalFondo)}</div><div class="kpi-sub">fondo acumulado</div></div>
+    ${isAdmin?`<div class="kpi-card" style="--accent:#1a6fd4"><div class="kpi-label">Fondo Total</div><div class="kpi-val">$${fmt(totalFondo)}</div><div class="kpi-sub">fondo acumulado</div></div>`:''}
     <div class="kpi-card" style="--accent:#00c9e0"><div class="kpi-label">Pacientes</div><div class="kpi-val">${totalPac}</div><div class="kpi-sub">este mes</div></div>
     <div class="kpi-card" style="--accent:#a78bfa"><div class="kpi-label">Exámenes</div><div class="kpi-val">${totalEx}</div><div class="kpi-sub">este mes</div></div>
   </div>
@@ -608,12 +684,12 @@ function buildDoctorHTML(id,isAdmin){
         ${isAdmin?`<button class="btn-primary" style="padding:6px 12px;font-size:10px;" onclick="generateComprobante('${id}')">🧾 Comprobante</button>`:''}
       </div>
     </div>
-    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th><th>Fondo</th><th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${histRows}</tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th>${thFondo}<th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${histRows}</tbody></table></div>
   </div>
-  <div class="history-section" style="margin-bottom:0">
+  ${isAdmin ? `<div class="history-section" style="margin-bottom:0">
     <div class="history-hdr"><div class="history-title">📆 Historial Completo</div></div>
-    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th><th>Fondo</th><th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${allRows}</tbody></table></div>
-  </div>`;
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th><th>Fondo</th><th>Comisión</th><th>Obs.</th><th></th></tr></thead><tbody>${allRows}</tbody></table></div>
+  </div>` : ''}`;
 }
 
 function initChart(id){
@@ -664,8 +740,10 @@ function saveCommission(){
   if(!fecha){toast('Ingrese la fecha','warn');return;}
   if(!fondo){toast('Ingrese el fondo de liquidez','warn');return;}
   const comision=parseFloat((fondo*0.1).toFixed(2));
-  DB.commissions.push({doctor,fecha,pacientes,examenes,fondo,comision,obs,ts:Date.now()});
+  const record = {doctor,fecha,pacientes,examenes,fondo,comision,obs,ts:Date.now()};
+  DB.commissions.push(record);
   saveDB();
+  saveCommissionToSheet(record);
   document.getElementById('f-pacientes').value='';
   document.getElementById('f-examenes').value='';
   document.getElementById('f-fondo').value='';
@@ -688,7 +766,9 @@ function deleteCommission(docId,idx){
   const recs=getCommissions(docId); const rec=recs[idx];
   const gi=DB.commissions.indexOf(rec);
   if(gi>-1) DB.commissions.splice(gi,1);
-  saveDB(); toast('Registro eliminado');
+  saveDB();
+  if(rec.id) deleteCommissionFromSheet(rec.id);
+  toast('Registro eliminado');
   buildAdminTabs(); renderAdminDoctorView(adminSelectedDoctor);
 }
 
@@ -723,8 +803,10 @@ function addDoctor(){
   const icon=document.getElementById('new-icon').value.trim()||'👨‍⚕️';
   if(!name||!pin){toast('Nombre y PIN requeridos','warn');return;}
   const id='doc_'+Date.now();
-  DB.doctors.push({id,name,pin,icon});
+  const newDoc = {id,name,pin,icon};
+  DB.doctors.push(newDoc);
   saveDB();
+  saveMedicoToSheet(newDoc);
   document.getElementById('new-name').value='';
   document.getElementById('new-pin').value='';
   document.getElementById('new-icon').value='';
@@ -743,6 +825,7 @@ function removeDoctor(id){
   DB.doctors=DB.doctors.filter(d=>d.id!==id);
   DB.commissions=DB.commissions.filter(c=>c.doctor!==id);
   saveDB();
+  deleteMedicoFromSheet(id);
   if(adminSelectedDoctor===id) adminSelectedDoctor=DB.doctors.length?DB.doctors[0].id:null;
   renderDoctorListAdmin();
   populateDoctorSelect();
@@ -760,6 +843,12 @@ function getMedal(amount){ for(let i=MEDALS.length-1;i>=0;i--){if(amount>=MEDALS
 function getNextMedal(amount){ for(let i=0;i<MEDALS.length;i++){if(amount<MEDALS[i].min)return MEDALS[i]; if(MEDALS[i].max===Infinity&&amount>=MEDALS[i].min)return null;} return null; }
 
 function fmt(n){return parseFloat(n||0).toFixed(2);}
+
+function setLoading(show){
+  // Simple loading on login button
+  const btn = document.querySelector('.pin-btn');
+  if(btn) btn.textContent = show ? 'Cargando...' : 'INGRESAR →';
+}
 
 function toast(msg,type){
   const el=document.getElementById('toast');
@@ -962,6 +1051,7 @@ function editPin(docId){
   if(!newPin||!newPin.trim()) return;
   doc.pin = newPin.trim().toLowerCase();
   saveDB();
+  updatePinInSheet(doc.id, doc.pin);
   renderDoctorListAdmin();
   toast('✅ PIN actualizado para ' + doc.name);
 }
