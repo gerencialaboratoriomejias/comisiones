@@ -319,16 +319,18 @@ body.dark .doctor-list-item{border-color:#1e3a5f;}
     </div>
     <div class="fg" style="margin-bottom:12px;">
       <label>Ícono</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+      <div id="emoji-picker" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;padding:10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
         <input type="hidden" id="new-icon" value="👨‍⚕️">
-        <button type="button" onclick="setIcon(this,'👨‍⚕️')" style="font-size:22px;padding:6px 10px;border:2px solid #1a6fd4;border-radius:8px;cursor:pointer;background:#e8f0fe;">👨‍⚕️</button>
-        <button type="button" onclick="setIcon(this,'👩‍⚕️')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">👩‍⚕️</button>
-        <button type="button" onclick="setIcon(this,'🩺')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">🩺</button>
-        <button type="button" onclick="setIcon(this,'👨‍🔬')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">👨‍🔬</button>
-        <button type="button" onclick="setIcon(this,'👩‍🔬')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">👩‍🔬</button>
-        <button type="button" onclick="setIcon(this,'🏥')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">🏥</button>
-        <button type="button" onclick="setIcon(this,'⚕️')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">⚕️</button>
-        <button type="button" onclick="setIcon(this,'💊')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">💊</button>
+        <span onclick="setIcon2('👨‍⚕️',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid #1a6fd4;background:#e8f0fe;">👨‍⚕️</span>
+        <span onclick="setIcon2('👩‍⚕️',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">👩‍⚕️</span>
+        <span onclick="setIcon2('🩺',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">🩺</span>
+        <span onclick="setIcon2('👨‍🔬',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">👨‍🔬</span>
+        <span onclick="setIcon2('👩‍🔬',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">👩‍🔬</span>
+        <span onclick="setIcon2('🏥',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">🏥</span>
+        <span onclick="setIcon2('⚕️',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">⚕️</span>
+        <span onclick="setIcon2('💊',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">💊</span>
+        <span onclick="setIcon2('🔬',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">🔬</span>
+        <span onclick="setIcon2('💉',this)" style="font-size:28px;cursor:pointer;padding:4px;border-radius:6px;border:2px solid transparent;">💉</span>
       </div>
     </div>
     <button class="btn-primary" style="width:100%;" onclick="addDoctor()">➕ Agregar</button>
@@ -694,10 +696,10 @@ function buildDoctorHTML(id,isAdmin){
     </div>
     <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th>${thFondo}<th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${histRows}</tbody></table></div>
   </div>
-  ${isAdmin ? `<div class="history-section" style="margin-bottom:0">
+  <div class="history-section" style="margin-bottom:0">
     <div class="history-hdr"><div class="history-title">📆 Historial Completo</div></div>
-    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th><th>Fondo</th><th>Comisión</th><th>Obs.</th><th></th></tr></thead><tbody>${allRows}</tbody></table></div>
-  </div>` : ''}`;
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th>${thFondo}<th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${allRows}</tbody></table></div>
+  </div>`;
 }
 
 function initChart(id){
@@ -860,6 +862,16 @@ function setIcon(btn, emoji){
   });
   btn.style.border = '2px solid #1a6fd4';
   btn.style.background = '#e8f0fe';
+}
+
+function setIcon2(emoji, el){
+  document.getElementById('new-icon').value = emoji;
+  document.querySelectorAll('#emoji-picker span').forEach(s=>{
+    s.style.border = '2px solid transparent';
+    s.style.background = 'transparent';
+  });
+  el.style.border = '2px solid #1a6fd4';
+  el.style.background = '#e8f0fe';
 }
 
 function setLoading(show){
