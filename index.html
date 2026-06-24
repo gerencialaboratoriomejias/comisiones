@@ -317,21 +317,10 @@ body.dark .doctor-list-item{border-color:#1e3a5f;}
       <div class="fg"><label>Nombre</label><input type="text" id="new-name" placeholder="Dr. Nombre Apellido"></div>
       <div class="fg"><label>PIN (palabra clave)</label><input type="text" id="new-pin" placeholder="apellido123"></div>
     </div>
-    <div class="fg" style="margin-bottom:12px;">
-      <label>Ícono</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
-        <input type="hidden" id="new-icon" value="👨‍⚕️">
-        <button type="button" onclick="setIcon(this,'👨‍⚕️')" style="font-size:22px;padding:6px 10px;border:2px solid #1a6fd4;border-radius:8px;cursor:pointer;background:#e8f0fe;">👨‍⚕️</button>
-        <button type="button" onclick="setIcon(this,'👩‍⚕️')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">👩‍⚕️</button>
-        <button type="button" onclick="setIcon(this,'🩺')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">🩺</button>
-        <button type="button" onclick="setIcon(this,'👨‍🔬')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">👨‍🔬</button>
-        <button type="button" onclick="setIcon(this,'👩‍🔬')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">👩‍🔬</button>
-        <button type="button" onclick="setIcon(this,'🏥')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">🏥</button>
-        <button type="button" onclick="setIcon(this,'⚕️')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">⚕️</button>
-        <button type="button" onclick="setIcon(this,'💊')" style="font-size:22px;padding:6px 10px;border:2px solid var(--border);border-radius:8px;cursor:pointer;background:#f8fafc;">💊</button>
-      </div>
+    <div class="form-row">
+      <div class="fg"><label>Ícono (emoji)</label><input type="text" id="new-icon" placeholder="👨‍⚕️" maxlength="4" style="font-size:22px;text-align:center;"></div>
+      <div class="fg" style="display:flex;align-items:flex-end;"><button class="btn-primary" style="width:100%;" onclick="addDoctor()">➕ Agregar</button></div>
     </div>
-    <button class="btn-primary" style="width:100%;" onclick="addDoctor()">➕ Agregar</button>
   </div>
 </div>
 
@@ -851,16 +840,6 @@ function getMedal(amount){ for(let i=MEDALS.length-1;i>=0;i--){if(amount>=MEDALS
 function getNextMedal(amount){ for(let i=0;i<MEDALS.length;i++){if(amount<MEDALS[i].min)return MEDALS[i]; if(MEDALS[i].max===Infinity&&amount>=MEDALS[i].min)return null;} return null; }
 
 function fmt(n){return parseFloat(n||0).toFixed(2);}
-
-function setIcon(btn, emoji){
-  document.getElementById('new-icon').value = emoji;
-  document.querySelectorAll('#modal-doctors button[type="button"]').forEach(b=>{
-    b.style.border = '2px solid var(--border)';
-    b.style.background = '#f8fafc';
-  });
-  btn.style.border = '2px solid #1a6fd4';
-  btn.style.background = '#e8f0fe';
-}
 
 function setLoading(show){
   // Simple loading on login button
