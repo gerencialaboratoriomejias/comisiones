@@ -965,7 +965,26 @@ let currentComprobante = null;
 
 function generateComprobante(docId){
   const doc = DB.doctors.find(d=>d.id===docId); if(!doc) return;
-  const now = new Date(); const month = now.getMonth(); const year = now.getFullYear();
+  const now = new Date();
+  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  document.getElementById('comp-select-docid').value = docId;
+  const selMes = document.getElementById('comp-select-mes');
+  selMes.innerHTML = meses.map((m,i)=>`<option value="${i}" ${i===now.getMonth()?'selected':''}>${m}</option>`).join('');
+  const selYear = document.getElementById('comp-select-year');
+  selYear.innerHTML = '';
+  for(let y=now.getFullYear()-2;y<=now.getFullYear();y++){
+    selYear.innerHTML += `<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`;
+  }
+  document.getElementById('comp-select-modal').classList.remove('hidden');
+}
+
+function confirmComprobante(){
+  const docId = document.getElementById('comp-select-docid').value;
+  const doc = DB.doctors.find(d=>d.id===docId); if(!doc) return;
+  const month = parseInt(document.getElementById('comp-select-mes').value);
+  const year = parseInt(document.getElementById('comp-select-year').value);
+  document.getElementById('comp-select-modal').classList.add('hidden');
+  const now = new Date();
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const all = getCommissions(docId);
   const monthly = all.filter(c=>{ const fechaStr=String(c.fecha||'').slice(0,10); const d=new Date(fechaStr+'T12:00:00'); return d.getMonth()===month&&d.getFullYear()===year; });
@@ -974,7 +993,6 @@ function generateComprobante(docId){
   const totalEx  = monthly.reduce((s,c)=>s+(c.examenes||0),0);
   const medal = getMedal(totalCom);
   const num = 'LCM-'+year+String(month+1).padStart(2,'0')+'-'+String(Math.floor(Math.random()*9000)+1000);
-
   document.getElementById('comp-num').textContent = 'N° ' + num;
   document.getElementById('comp-icon').textContent = doc.icon;
   document.getElementById('comp-name').textContent = doc.name;
@@ -985,10 +1003,9 @@ function generateComprobante(docId){
   document.getElementById('comp-medal-name').textContent = medal.label;
   document.getElementById('comp-medal-msg').textContent = medal.msg;
   document.getElementById('comp-pac').textContent = totalPac;
-  document.getElementById('comp-ex').textContent  = totalEx;
-  const fechaEmision = now.getDate()+' de '+meses[month]+' de '+year;
+  document.getElementById('comp-ex').textContent = totalEx;
+  const fechaEmision = now.getDate()+' de '+meses[now.getMonth()]+' de '+now.getFullYear();
   document.getElementById('comp-date').textContent = 'Emitido el ' + fechaEmision;
-
   currentComprobante = {num, doc, month, year, totalCom, totalPac, totalEx, medal, fechaEmision};
   document.getElementById('comprobante-overlay').classList.add('show');
 }
