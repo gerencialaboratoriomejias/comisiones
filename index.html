@@ -639,14 +639,16 @@ function buildDoctorHTML(id,isAdmin){
     const origIdx=all.indexOf(c);
     const delBtn=isAdmin?`<td style="white-space:nowrap;"><button style="background:none;border:none;cursor:pointer;font-size:13px;padding:3px 5px;border-radius:4px;color:#6a9ed4;" onclick="openEditComision('${id}',${origIdx})">✏️</button><button class="btn-danger" style="margin-left:3px;" onclick="deleteCommission('${id}',${origIdx})">🗑</button></td>`:'';
     const fondoCol=isAdmin?`<td style="font-family:var(--mono)">$${fmt(c.fondo)}</td>`:'';
-    return `<tr><td style="font-size:11px;color:var(--light)">${c.fecha}</td><td><b>${c.pacientes}</b></td><td>${c.examenes}</td>${fondoCol}<td style="font-family:var(--mono);color:#00a651;font-weight:700">$${fmt(c.comision)}</td><td style="font-size:11px;color:var(--mid)">${c.obs||'—'}</td>${delBtn}</tr>`;
+    const fechaDisplay=String(c.fecha||'').slice(0,10);
+    return `<tr><td style="font-size:11px;color:var(--light)">${fechaDisplay}</td><td><b>${c.pacientes}</b></td><td>${c.examenes}</td>${fondoCol}<td style="font-family:var(--mono);color:#00a651;font-weight:700">$${fmt(c.comision)}</td><td style="font-size:11px;color:var(--mid)">${c.obs||'—'}</td>${delBtn}</tr>`;
   }).join('');
   if(!histRows) histRows=`<tr><td colspan="${isAdmin?7:6}" style="text-align:center;padding:22px;color:var(--light)">Sin registros este mes</td></tr>`;
 
   let allRows=all.slice().reverse().map((c,i)=>{
     const origIdx=all.length-1-i;
     const delBtn=isAdmin?`<td><button class="btn-danger" onclick="deleteCommission('${id}',${origIdx})">🗑</button></td>`:'';
-    return `<tr><td style="font-size:11px;color:var(--light)">${c.fecha}</td><td>${c.pacientes}</td><td>${c.examenes}</td><td style="font-family:var(--mono)">$${fmt(c.fondo)}</td><td style="font-family:var(--mono);color:#00a651;font-weight:700">$${fmt(c.comision)}</td><td style="font-size:11px;color:var(--mid)">${c.obs||'—'}</td>${delBtn}</tr>`;
+    const fechaDisplay=String(c.fecha||'').slice(0,10);
+    return `<tr><td style="font-size:11px;color:var(--light)">${fechaDisplay}</td><td>${c.pacientes}</td><td>${c.examenes}</td><td style="font-family:var(--mono)">$${fmt(c.fondo)}</td><td style="font-family:var(--mono);color:#00a651;font-weight:700">$${fmt(c.comision)}</td><td style="font-size:11px;color:var(--mid)">${c.obs||'—'}</td>${delBtn}</tr>`;
   }).join('');
   if(!allRows) allRows=`<tr><td colspan="${isAdmin?7:6}" style="text-align:center;padding:22px;color:var(--light)">Sin registros</td></tr>`;
 
@@ -696,10 +698,10 @@ function buildDoctorHTML(id,isAdmin){
     </div>
     <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th>${thFondo}<th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${histRows}</tbody></table></div>
   </div>
-  <div class="history-section" style="margin-bottom:0">
+  ${isAdmin ? `<div class="history-section" style="margin-bottom:0">
     <div class="history-hdr"><div class="history-title">📆 Historial Completo</div></div>
-    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th>${thFondo}<th>Comisión</th><th>Obs.</th>${thExt}</tr></thead><tbody>${allRows}</tbody></table></div>
-  </div>`;
+    <div class="table-wrap"><table><thead><tr><th>Fecha</th><th>Pac.</th><th>Exám.</th><th>Fondo</th><th>Comisión</th><th>Obs.</th><th></th></tr></thead><tbody>${allRows}</tbody></table></div>
+  </div>` : ''}`;
 }
 
 function initChart(id){
@@ -963,18 +965,8 @@ let currentComprobante = null;
 
 function generateComprobante(docId){
   const doc = DB.doctors.find(d=>d.id===docId); if(!doc) return;
-  const now = new Date();
+  const now = new Date(); const month = now.getMonth(); const year = now.getFullYear();
   const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  
-  // Ask admin which month
-  const mesOpts = meses.map((m,i)=>`${i}:${m}`).join(',');
-  const mesInput = prompt('¿Para qué mes? (0=Enero, 1=Feb... 4=Mayo, 5=Junio)\n0-Enero 1-Feb 2-Mar 3-Abr 4-May 5-Jun 6-Jul 7-Ago 8-Sep 9-Oct 10-Nov 11-Dic', now.getMonth());
-  if(mesInput===null) return;
-  const yearInput = prompt('¿Para qué año?', now.getFullYear());
-  if(yearInput===null) return;
-  
-  const month = parseInt(mesInput);
-  const year = parseInt(yearInput);
   const all = getCommissions(docId);
   const monthly = all.filter(c=>{ const fechaStr=String(c.fecha||'').slice(0,10); const d=new Date(fechaStr+'T12:00:00'); return d.getMonth()===month&&d.getFullYear()===year; });
   const totalCom = monthly.reduce((s,c)=>s+(c.comision||0),0);
@@ -994,7 +986,7 @@ function generateComprobante(docId){
   document.getElementById('comp-medal-msg').textContent = medal.msg;
   document.getElementById('comp-pac').textContent = totalPac;
   document.getElementById('comp-ex').textContent  = totalEx;
-  const fechaEmision = now.getDate()+' de '+meses[now.getMonth()]+' de '+now.getFullYear();
+  const fechaEmision = now.getDate()+' de '+meses[month]+' de '+year;
   document.getElementById('comp-date').textContent = 'Emitido el ' + fechaEmision;
 
   currentComprobante = {num, doc, month, year, totalCom, totalPac, totalEx, medal, fechaEmision};
@@ -1192,6 +1184,27 @@ loadDarkMode();
 // INIT
 buildLoginGrid();
 </script>
+
+
+<!-- COMP SELECT MODAL -->
+<div class="modal-overlay hidden" id="comp-select-modal">
+  <div class="modal-box" style="max-width:360px;text-align:center;">
+    <h3>🧾 Generar Comprobante</h3>
+    <input type="hidden" id="comp-select-docid">
+    <div class="form-row" style="margin-bottom:16px;">
+      <div class="fg">
+        <label>Mes</label>
+        <select id="comp-select-mes" style="font-size:14px;padding:10px;"></select>
+      </div>
+      <div class="fg">
+        <label>Año</label>
+        <select id="comp-select-year" style="font-size:14px;padding:10px;"></select>
+      </div>
+    </div>
+    <button class="btn-primary" style="width:100%;" onclick="confirmComprobante()">✅ Generar</button>
+    <button class="btn-secondary" style="width:100%;margin-top:8px;" onclick="document.getElementById('comp-select-modal').classList.add('hidden')">Cancelar</button>
+  </div>
+</div>
 
 <!-- COMPROBANTE -->
 <div id="comprobante-overlay">
