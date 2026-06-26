@@ -510,7 +510,7 @@ function doLogin(){
   
   // Generic doctor login - search by PIN
   if(uid === '__doctor__'){
-    const doc = DB.doctors.find(d=>d.pin.toLowerCase().trim()===entered);
+    const doc = DB.doctors.find(d=>String(d.pin).toLowerCase().trim()===entered);
     if(doc){
       currentUser = doc.id;
       document.getElementById('login-screen').classList.add('hidden');
@@ -527,7 +527,7 @@ function doLogin(){
   
   const u = uid==='admin' ? ADMIN : DB.doctors.find(d=>d.id===uid);
   if(!u){return;}
-  if(entered === u.pin.toLowerCase().trim()){
+  if(entered === String(u.pin).toLowerCase().trim()){
     currentUser = uid;
     document.getElementById('login-screen').classList.add('hidden');
     document.getElementById('hdr').style.display='flex';
