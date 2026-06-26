@@ -477,16 +477,13 @@ function buildLoginGrid(){
   grid.innerHTML = html;
 }
 
-async function showDoctorPinEntry(){
+function showDoctorPinEntry(){
   selectedPinUser = '__doctor__';
   document.getElementById('doctor-grid').style.display='none';
   document.getElementById('pin-section').classList.add('show');
-  document.getElementById('pin-label').textContent = 'Sincronizando...';
+  document.getElementById('pin-label').textContent = 'Ingrese su PIN';
   document.getElementById('pin-input').value='';
   document.getElementById('pin-error').style.display='none';
-  // Sync sheet before allowing login
-  await syncFromSheet();
-  document.getElementById('pin-label').textContent = 'Ingrese su PIN';
   setTimeout(()=>document.getElementById('pin-input').focus(),80);
 }
 
