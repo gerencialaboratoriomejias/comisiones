@@ -1200,6 +1200,26 @@ loadDarkMode();
 
 // INIT
 buildLoginGrid();
+
+// Auto-login from URL parameter
+(function(){
+  const params = new URLSearchParams(window.location.search);
+  const docParam = params.get('doc');
+  if(docParam){
+    // Wait for DB to sync then auto-login
+    setTimeout(async function(){
+      await syncFromSheet();
+      const doc = DB.doctors.find(d=>d.id===docParam.toLowerCase());
+      if(doc){
+        currentUser = doc.id;
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('hdr').style.display='flex';
+        document.getElementById('app').classList.add('show');
+        initApp();
+      }
+    }, 1500);
+  }
+})();
 </script>
 
 
